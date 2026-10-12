@@ -166,7 +166,8 @@ async function hook() {
   else if (u.msg) lines.push(u.msg)
   else if (t.fresh) lines.push(`signed in as ${t.user}`)
   lines.push(...(await replies()))
-  if (lines.length) say(lines.join('. '))
+  // One sentence per line; an author's reply that already ends in punctuation gets no second full stop.
+  if (lines.length) say(lines.map((l, i) => (i < lines.length - 1 && !/[.!?]$/.test(l) ? l + '.' : l)).join(' '))
 }
 async function open() {
   const t = await ensureToken()
