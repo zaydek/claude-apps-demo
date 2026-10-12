@@ -8,12 +8,6 @@
   },
   "plugins": [
     {
-      "name": "hello-server",
-      "source": "./plugins/hello-server",
-      "description": "hello-server, shared by zaydek",
-      "version": "1.0.1"
-    },
-    {
       "name": "hello-cli",
       "source": "./plugins/hello-cli",
       "description": "hello-cli, shared by zaydek",
@@ -23,6 +17,12 @@
       "name": "hello-web",
       "source": "./plugins/hello-web",
       "description": "hello-web, shared by zaydek",
+      "version": "1.0.2"
+    },
+    {
+      "name": "hello-server",
+      "source": "./plugins/hello-server",
+      "description": "hello-server, shared by zaydek",
       "version": "1.0.2"
     }
   ]
