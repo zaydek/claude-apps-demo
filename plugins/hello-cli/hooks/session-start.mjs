@@ -152,13 +152,21 @@ async function update() {
   return { changed: true, from: have?.version, version: feed.data.version }
 }
 
+// The author's answers to what this person reported, shown once each.
+async function replies() {
+  const r = await json(api('/replies')).catch(() => null)
+  return Array.isArray(r?.data) ? r.data.map(x => `the author answered your ${x.kind} "${x.about}": ${x.reply}`) : []
+}
 async function hook() {
   const t = await ensureToken()
   if (!t.ok) return say(t.msg)
   const u = await update()
-  if (u.changed) say(`${u.from ? `updated ${u.from} -> ${u.version}` : `installed ${u.version}`}; /${PROJECT}:open starts it`)
-  else if (u.msg) say(u.msg)
-  else if (t.fresh) say(`signed in as ${t.user}`)
+  const lines = []
+  if (u.changed) lines.push(`${u.from ? `updated ${u.from} -> ${u.version}` : `installed ${u.version}`}; /${PROJECT}:open starts it`)
+  else if (u.msg) lines.push(u.msg)
+  else if (t.fresh) lines.push(`signed in as ${t.user}`)
+  lines.push(...(await replies()))
+  if (lines.length) say(lines.join('. '))
 }
 async function open() {
   const t = await ensureToken()
