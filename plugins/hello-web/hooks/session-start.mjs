@@ -22,7 +22,9 @@ const SHIP_URL = process.env.SHIP_LAUNCHER_URL || 'https://claude-apps-e2e-web.f
 // The author's build-signing public key: a build whose signature does not check out is never unpacked or run.
 const SIGNING_PUB = 'MCowBQYDK2VwAyEAxwaedCieT0Z9LzFnKYlo8E_qIyg9FUbwHEoQ06UjCPc'
 const ENROLL_NS = 'ship-enroll-v1' // Fixed here, never taken from the server
-const DATA = process.env.CLAUDE_PLUGIN_DATA || path.join(os.homedir(), '.claude-apps', PROJECT)
+// One folder for the hook and the slash commands alike (Claude Code gives hooks CLAUDE_PLUGIN_DATA but not the `!` shell
+// of a command, so that variable would split one install into two).
+const DATA = process.env.CLAUDE_APPS_DATA || path.join(os.homedir(), '.claude-apps', PROJECT)
 const SELF = fileURLToPath(import.meta.url)
 fs.mkdirSync(DATA, { recursive: true, mode: 0o700 })
 const file = n => path.join(DATA, n)
@@ -142,7 +144,7 @@ async function update() {
   fs.writeFileSync(tgz, buf)
   fs.rmSync(dir, { recursive: true, force: true })
   fs.mkdirSync(dir, { recursive: true })
-  execFileSync('tar', ['-xzf', tgz, '-C', dir])
+  execFileSync('tar', ['-xzf', tgz, '-C', dir], { stdio: ['ignore', 'ignore', 'pipe'] })
   fs.rmSync(tgz, { force: true })
   write('current.json', JSON.stringify({ sha: feed.data.sha, version: feed.data.version, channel: feed.data.channel }))
   for (const d of fs.readdirSync(DATA)) if (d.startsWith('app-') && d !== 'app-' + feed.data.sha && d !== 'app-' + have?.sha) fs.rmSync(file(d), { recursive: true, force: true })
