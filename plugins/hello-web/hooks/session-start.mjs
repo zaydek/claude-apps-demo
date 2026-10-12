@@ -147,6 +147,7 @@ async function update() {
   execFileSync('tar', ['-xzf', tgz, '-C', dir], { stdio: ['ignore', 'ignore', 'pipe'] })
   fs.rmSync(tgz, { force: true })
   write('current.json', JSON.stringify({ sha: feed.data.sha, version: feed.data.version, channel: feed.data.channel }))
+  await api('/feed').catch(() => {}) // Tells the server which version this install now has (its x-ship-version header)
   for (const d of fs.readdirSync(DATA)) if (d.startsWith('app-') && d !== 'app-' + feed.data.sha && d !== 'app-' + have?.sha) fs.rmSync(file(d), { recursive: true, force: true })
   return { changed: true, from: have?.version, version: feed.data.version }
 }
