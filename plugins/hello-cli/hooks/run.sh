@@ -4,7 +4,7 @@
 # folder once, then runs session-start.mjs with the same arguments. A failure is said out loud, never swallowed.
 PROJECT='hello-cli'
 NODE_VERSION="${SHIP_NODE_VERSION:-v22.12.0}"
-DATA="${CLAUDE_PLUGIN_DATA:-$HOME/.claude-apps/$PROJECT}"
+DATA="${CLAUDE_APPS_DATA:-$HOME/.claude-apps/$PROJECT}"
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 MODE="$1"
 
