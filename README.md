@@ -34,3 +34,14 @@ claude plugin install hello-server@claude-apps-demo
 ```
 
 Then `/hello-server:open`. When zaydek says the launcher changed: `claude plugin marketplace update claude-apps-demo` and `claude plugin update hello-server@claude-apps-demo`.
+
+## hello-trd
+
+hello-trd, shared by zaydek
+
+```
+claude plugin marketplace add zaydek/claude-apps-demo
+claude plugin install hello-trd@claude-apps-demo
+```
+
+Then `/hello-trd:open`. When zaydek says the launcher changed: `claude plugin marketplace update claude-apps-demo` and `claude plugin update hello-trd@claude-apps-demo`.
