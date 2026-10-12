@@ -162,12 +162,32 @@ async function hook() {
   if (!t.ok) return say(t.msg)
   const u = await update()
   const lines = []
-  if (u.changed) lines.push(`${u.from ? `updated ${u.from} -> ${u.version}` : `installed ${u.version}`}; /${PROJECT}:open starts it`)
+  const restarted = u.changed ? await restartLocal().catch(e => `could not restart the local server (${e.message})`) : null
+  if (u.changed) lines.push(`${u.from ? `updated ${u.from} -> ${u.version}` : `installed ${u.version}`}; ${restarted || `/${PROJECT}:open starts it`}`)
   else if (u.msg) lines.push(u.msg)
   else if (t.fresh) lines.push(`signed in as ${t.user}`)
   lines.push(...(await replies()))
   // One sentence per line; an author's reply that already ends in punctuation gets no second full stop.
   if (lines.length) say(lines.map((l, i) => (i < lines.length - 1 && !/[.!?]$/.test(l) ? l + '.' : l)).join(' '))
+}
+// How to run the current build: its folder, its ship.run.json, the command and the app's environment.
+function runSpec(cur) {
+  const dir = file('app-' + cur.sha)
+  let spec
+  try { spec = JSON.parse(fs.readFileSync(path.join(dir, 'ship.run.json'), 'utf8')) } catch { return null }
+  const env = { ...process.env, SHIP_URL, SHIP_TOKEN: read('token'), SHIP_VERSION: cur.version, SHIP_SHA: cur.sha, SHIP_DATA: path.join(DATA, 'state'), SHIP_USER: read('user') }
+  return { dir, spec, env, cmd: (spec.run || []).map(a => (a === 'node' ? process.execPath : a)) }
+}
+// After an update, a local server still running the old build is restarted on the new one at the same address, so the
+// person's open tab gets the new build and the version the server sees is the one they really run.
+async function restartLocal() {
+  let run = null
+  try { run = JSON.parse(read('server.json')) } catch {}
+  const cur = current()
+  if (!run || !cur || run.sha === cur.sha || !alive(run.pid)) return null
+  const r = runSpec(cur)
+  if (!r || r.spec.mode !== 'local') { stopLocal(); return `stopped the old ${PROJECT} server` }
+  return (await openLocal(r.spec, r.cmd, r.dir, r.env, cur, { browser: false })).replace(/ is running at /, ' restarted at ')
 }
 async function open() {
   const t = await ensureToken()
@@ -175,17 +195,16 @@ async function open() {
   const u = await update().catch(e => ({ msg: `update failed (${e.message})` }))
   const cur = current()
   if (!cur) return console.log(u.msg || 'nothing to open yet')
-  const dir = file('app-' + cur.sha)
-  let spec = {}
-  try { spec = JSON.parse(fs.readFileSync(path.join(dir, 'ship.run.json'), 'utf8')) } catch { return console.log('this build has no ship.run.json; the author needs to add one') }
-  const env = { ...process.env, SHIP_URL, SHIP_TOKEN: read('token'), SHIP_VERSION: cur.version, SHIP_SHA: cur.sha, SHIP_DATA: path.join(DATA, 'state'), SHIP_USER: read('user') }
+  const r = runSpec(cur)
+  if (!r) return console.log('this build has no ship.run.json; the author needs to add one')
+  const { dir, spec, env } = r
   if (spec.mode === 'hosted') {
     const l = await json(api('/_ca/link', { method: 'POST', body: {} }))
     if (!l.ok) return console.log(`could not get a sign-in link (${l.status})`)
     openBrowser(l.data.url)
     return console.log(`${PROJECT} ${cur.version} is hosted at ${new URL(SHIP_URL).origin}/. This one-time link signs your browser in (10 minutes): ${l.data.url}`)
   }
-  const cmd = spec.run.map(a => (a === 'node' ? process.execPath : a))
+  const cmd = r.cmd
   if (spec.mode === 'local') return console.log(await openLocal(spec, cmd, dir, env, cur))
   if (spec.foreground) {
     const p = spawn(cmd[0], cmd.slice(1), { cwd: dir, env, stdio: ['ignore', 'pipe', 'pipe'] })
@@ -199,7 +218,8 @@ async function open() {
   console.log(`opened ${PROJECT} ${cur.version}${spec.url ? ` at ${spec.url}` : ''}${u.msg ? ` (${u.msg})` : ''}`)
 }
 
-function openBrowser(url) {
+const openBrowser = url => openBrowserNow(url)
+function openBrowserNow(url) {
   if (process.env.CLAUDE_APPS_NO_OPEN === '1' || (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY)) return
   const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open'
   try { spawn(cmd, [url], { stdio: 'ignore', detached: true }).on('error', () => {}).unref() } catch {}
@@ -216,7 +236,8 @@ function stopLocal() {
   fs.rmSync(file('server.json'), { force: true })
   return run
 }
-async function openLocal(spec, cmd, dir, env, cur) {
+async function openLocal(spec, cmd, dir, env, cur, { browser = true } = {}) {
+  const openBrowser = url => browser && openBrowserNow(url)
   let run = null
   try { run = JSON.parse(read('server.json')) } catch {}
   const urlOf = port => `http://${PROJECT}.localhost:${port}`
