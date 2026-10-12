@@ -2,4 +2,13 @@
 
 Launcher plugins for apps zaydek shares, made with claude-apps. They hold no keys and no builds; access is by GitHub username or by an SSH public key the author pasted.
 
-No apps are shared here right now.
+## hello-app
+
+hello-app, shared by zaydek
+
+```
+claude plugin marketplace add zaydek/claude-apps-demo
+claude plugin install hello-app@claude-apps-demo
+```
+
+Then `/hello-app:open`. When zaydek says the launcher changed: `claude plugin marketplace update claude-apps-demo` and `claude plugin update hello-app@claude-apps-demo`.
