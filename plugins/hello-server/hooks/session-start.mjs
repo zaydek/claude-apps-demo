@@ -212,10 +212,12 @@ async function openLocal(spec, cmd, dir, env, cur) {
   const urlOf = port => `http://${PROJECT}.localhost:${port}`
   if (run && run.sha === cur.sha && alive(run.pid) && (await answers(run.port))) { openBrowser(urlOf(run.port)); return `${PROJECT} ${cur.version} is running at ${urlOf(run.port)}` }
   stopLocal()
-  // A port fixed by the build, or one picked from the project name in 7500-7799, moving up past ports in use.
+  // A port fixed by the build, or the one it ran on before, or one picked from the project name in 7500-7799; a port
+  // just given up by the old server gets two seconds to come free, so the address people bookmarked stays the same.
   let h = 0
   for (const c of PROJECT) h = (h * 31 + c.charCodeAt(0)) >>> 0
-  let port = +spec.port || 7500 + (h % 300)
+  let port = +spec.port || run?.port || 7500 + (h % 300)
+  for (let i = 0; run && i < 20 && !(await portFree(port)); i++) await new Promise(r => setTimeout(r, 100))
   for (let i = 0; i < 40 && !(await portFree(port)); i++) port = port >= 7799 ? 7500 : port + 1
   const log = fs.openSync(file('app.log'), 'a')
   const p = spawn(cmd[0], cmd.slice(1), { cwd: dir, env: { ...env, PORT: String(port), HOST: '127.0.0.1', CLAUDE_APPS_URL: urlOf(port) }, detached: true, stdio: ['ignore', log, log] })
