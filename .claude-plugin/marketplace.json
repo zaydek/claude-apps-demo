@@ -12,6 +12,12 @@
       "source": "./plugins/hello-cli",
       "description": "hello-cli, shared by zaydek",
       "version": "1.0.1"
+    },
+    {
+      "name": "hello-web",
+      "source": "./plugins/hello-web",
+      "description": "hello-web, shared by zaydek",
+      "version": "1.0.1"
     }
   ]
 }
